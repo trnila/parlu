@@ -96,10 +96,12 @@ std::ostream& operator<<(std::ostream& out, Matrix<double>& m) {
 template<typename T>
 void decompose(Matrix<T>& matrix, Matrix<T>& out) {
 	for(int k = 0; k < matrix.getSize(); k++) {
+		#pragma omp parallel for
 		for(int i = k + 1; i < matrix.getSize(); i++) {
 			out[i][k] = matrix[i][k] / matrix[k][k];
 		}
 
+		#pragma omp parallel for
 		for(int j = k + 1; j < matrix.getSize(); j++) {
 			for(int i = k + 1; i < matrix.getSize(); i++) {
 				matrix[i][j] = matrix[i][j] - out[i][k] * matrix[k][j];
