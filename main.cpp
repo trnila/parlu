@@ -7,6 +7,7 @@
 #include <iomanip>
 #include <assert.h>
 #include <string.h>
+#include "measure.h"
 
 template<typename T>
 class Matrix {
@@ -17,6 +18,15 @@ public:
 
 		for(int i = 0; i < n; i++) {
 			data[i * n + i] = 1;
+		}
+	}
+
+	Matrix(const Matrix& m) {
+		size = m.getSize();
+		data = new T[size * size]();
+
+		for(int i = 0; i < size * size; i++) {
+			data[i] = m.data[i];
 		}
 	}
 
@@ -39,14 +49,23 @@ public:
 	Matrix<T>& operator=(const Matrix<T> &m) {
 		assert(getSize() == m.getSize());
 
-		for(int i = 0; i < size; i++) {
+		for(int i = 0; i < size * size; i++) {
 			m.data[i] = data[i];
 		}
 	}
 
 	bool operator==(const Matrix<T> &m) {
 		assert(getSize() == m.getSize());
-		return memcmp(data, m.data, getSize() * sizeof(T)) == 0;
+
+		bool equals = true;
+		for(int i = 0, len = size * size; i < len; i++) {
+			if(abs(data[i]) - abs(m.data[i]) > 2) {
+				equals = false;
+				std::cout << i << " " << data[i] << "-" << m.data[i] << "\n";
+			}
+		}
+
+		return equals;
 	}
 
 	bool operator!=(const Matrix<T> &m) {
@@ -57,6 +76,10 @@ private:
 	int size;
 	T *data;
 };
+
+void print(const char* name, Matrix<float> &m) {
+	//std::cout << name << "\n" << m;
+}
 
 std::ostream& operator<<(std::ostream& out, Matrix<float>& m) {
 	for(int r = 0; r < m.size; r++) {
@@ -83,7 +106,7 @@ void decompose(Matrix<T>& matrix, Matrix<T>& out) {
 		}
 	}
 
-	// null it faggot
+	#pragma omp parallel for
 	for(int r = 0; r < matrix.getSize(); r++) {
 		for (int i = 0; i < r; ++i) {
 			matrix[r][i] = 0;
@@ -115,8 +138,9 @@ Matrix<T> mult(Matrix<T>& a, Matrix<T>& b) {
 
 
 	Matrix<T> res(a.getSize());
-	for(int r = 0; r < a.getSize(); r++) {
-		for(int c = 0; c < a.getSize(); c++) {
+	#pragma omp parallel for
+	for(int c = 0; c < a.getSize(); c++) {
+		for(int r = 0; r < a.getSize(); r++) {
 			res[r][c] = 0;
 			for(int j = 0; j < a.getSize(); j++) {
 				res[r][c] += a[r][j] * b[j][c];
@@ -139,21 +163,33 @@ int main(int argc, char**argv) {
 
 
 	Matrix<float> matrix = load(*input);
+	Matrix<float> orig(matrix);
 	Matrix<float> l(matrix.getSize());
 
 	std::cout.precision(3);
 	std::cout << std::setw(2);
 	std::cout << std::fixed;
 
-	decompose(matrix, l);
-	//std::cout << l;
-	//std::cout << matrix;
-
-	Matrix<float> check = mult(l, matrix);
-	//std::cout << check;
-
-	if(matrix != check) {
-		std::cout << "===ERROR===\n";
+	{
+		PROFILE_BLOCK("decomposition");
+		decompose(matrix, l);
 	}
+	print("l", l);
+	print("u", matrix);
+
+	{
+		PROFILE_BLOCK("MULT");
+		Matrix<float> check = mult(l, matrix);
+		print("lu", check);
+		print("oriG", orig);
+
+		{
+			PROFILE_BLOCK("CHECK");
+			if (orig != check) {
+				std::cout << "===ERROR===\n";
+			}
+		}
+	}
+
 
 }
