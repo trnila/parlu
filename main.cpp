@@ -146,11 +146,11 @@ int main(int argc, char**argv) {
 	std::cout << std::fixed;
 
 	decompose(matrix, l);
-	std::cout << l;
-	std::cout << matrix;
+	//std::cout << l;
+	//std::cout << matrix;
 
 	Matrix<float> check = mult(l, matrix);
-	std::cout << check;
+	//std::cout << check;
 
 	if(matrix != check) {
 		std::cout << "===ERROR===\n";
