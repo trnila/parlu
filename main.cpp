@@ -35,7 +35,7 @@ public:
 	}
 
 	friend std::ostream& operator<<(std::ostream& out, Matrix<float>& m);
-	friend Matrix<float> load(const char* file);
+	friend Matrix<float> load(std::istream&);
 	Matrix<T>& operator=(const Matrix<T> &m) {
 		assert(getSize() == m.getSize());
 
@@ -91,27 +91,11 @@ void decompose(Matrix<T>& matrix, Matrix<T>& out) {
 	}
 }
 
-int lines(const char* f) {
-	std::ifstream file(f);
-	file.unsetf(std::ios_base::skipws);
 
-	int n = std::count(
-			std::istream_iterator<char>(file),
-			std::istream_iterator<char>(),
-			'\n'
-	);
-
-	return n;
-}
-
-
-Matrix<float> load(const char* file) {
-	std::ifstream f(file);
-	if(!f) {
-		throw std::runtime_error("File not found");
-	}
-
-	int size = lines(file) + 1;
+Matrix<float> load(std::istream &f) {
+	int size;
+	f >> size;
+	assert(size > 0);
 
 	Matrix<float> m(size);
 
@@ -143,8 +127,18 @@ Matrix<T> mult(Matrix<T>& a, Matrix<T>& b) {
 	return res;
 }
 
-int main() {
-	Matrix<float> matrix = load("./examples/2.in");
+int main(int argc, char**argv) {
+	std::istream *input;
+	std::ifstream file;
+	if(argc == 2) {
+		file.open(argv[1]);
+		input = &file;
+	} else {
+		input = &std::cin;
+	}
+
+
+	Matrix<float> matrix = load(*input);
 	Matrix<float> l(matrix.getSize());
 
 	std::cout.precision(3);
