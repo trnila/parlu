@@ -7,6 +7,7 @@
 #include <iomanip>
 #include <assert.h>
 #include <string.h>
+#include <math.h>
 #include "measure.h"
 
 template<typename T>
@@ -44,8 +45,8 @@ public:
 		return size;
 	}
 
-	friend std::ostream& operator<<(std::ostream& out, Matrix<float>& m);
-	friend Matrix<float> load(std::istream&);
+	friend std::ostream& operator<<(std::ostream& out, Matrix<double>& m);
+	friend Matrix<double> load(std::istream&);
 	Matrix<T>& operator=(const Matrix<T> &m) {
 		assert(getSize() == m.getSize());
 
@@ -59,9 +60,9 @@ public:
 
 		bool equals = true;
 		for(int i = 0, len = size * size; i < len; i++) {
-			if(abs(data[i]) - abs(m.data[i]) > 2) {
+			if(fabs(data[i] - m.data[i]) > 0.001) {
 				equals = false;
-				std::cout << i << " " << data[i] << "-" << m.data[i] << "\n";
+				printf("%f %f\n", data[i], m.data[i]);
 			}
 		}
 
@@ -77,11 +78,11 @@ private:
 	T *data;
 };
 
-void print(const char* name, Matrix<float> &m) {
+void print(const char* name, Matrix<double> &m) {
 	//std::cout << name << "\n" << m;
 }
 
-std::ostream& operator<<(std::ostream& out, Matrix<float>& m) {
+std::ostream& operator<<(std::ostream& out, Matrix<double>& m) {
 	for(int r = 0; r < m.size; r++) {
 		for(int c = 0; c < m.size; c++) {
 			out << m[r][c] << ' ';
@@ -115,12 +116,12 @@ void decompose(Matrix<T>& matrix, Matrix<T>& out) {
 }
 
 
-Matrix<float> load(std::istream &f) {
+Matrix<double> load(std::istream &f) {
 	int size;
 	f >> size;
 	assert(size > 0);
 
-	Matrix<float> m(size);
+	Matrix<double> m(size);
 
 	for(int i = 0; i < size * size; i++) {
 		f >> m.data[i];
@@ -162,9 +163,9 @@ int main(int argc, char**argv) {
 	}
 
 
-	Matrix<float> matrix = load(*input);
-	Matrix<float> orig(matrix);
-	Matrix<float> l(matrix.getSize());
+	Matrix<double> matrix = load(*input);
+	Matrix<double> orig(matrix);
+	Matrix<double> l(matrix.getSize());
 
 	std::cout.precision(3);
 	std::cout << std::setw(2);
@@ -179,7 +180,7 @@ int main(int argc, char**argv) {
 
 	{
 		PROFILE_BLOCK("MULT");
-		Matrix<float> check = mult(l, matrix);
+		Matrix<double> check = mult(l, matrix);
 		print("lu", check);
 		print("oriG", orig);
 
