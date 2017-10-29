@@ -9,7 +9,7 @@ void writeBin(int n, std::function<int(void)> gen) {
 	// write dimension of matrix
 	write(1, &n, sizeof(n));
 
-	#pragma omp parallel for
+	//#pragma omp parallel for
 	for(int i = 0; i < n; i++) {
 		double values[n];
 		for(int j = 0; j < n; j++) {

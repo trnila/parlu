@@ -12,9 +12,12 @@
 #include "matrix.h"
 
 void print(const char* name, Matrix<double> &m) {
-	//std::cout << name << "\n" << m;
+//	std::cout << name << "\n" << m;
 }
 
+/**
+ * when function completes, matrix contains U, out contains L matrix
+ */
 template<typename T>
 void decomposeOpenMP(Matrix<T> &matrix, Matrix<T> &out) {
 	for(int k = 0; k < matrix.getSize(); k++) {
@@ -26,13 +29,13 @@ void decomposeOpenMP(Matrix<T> &matrix, Matrix<T> &out) {
 		#pragma omp parallel for
 		for(int j = k + 1; j < matrix.getSize(); j++) {
 			for(int i = k + 1; i < matrix.getSize(); i++) {
-				matrix[i][j] = matrix[i][j] - out[i][k] * matrix[k][j];
+				matrix[i][j] -= out[i][k] * matrix[k][j];
 			}
 		}
 	}
 
 	#pragma omp parallel for
-	for(int r = 0; r < matrix.getSize(); r++) {
+	for (int r = 0; r < matrix.getSize(); r++) {
 		for (int i = 0; i < r; ++i) {
 			matrix[r][i] = 0;
 		}
@@ -115,7 +118,7 @@ int main(int argc, char**argv) {
 	} else if(strcmp(fmt, "txt") == 0) {
 		matrix = loadTxt<double>(*input);
 	}
-	print("matrix", matrix);
+	print("x", matrix);
 
 	Matrix<double> orig(matrix), l(matrix.getSize());
 
@@ -127,14 +130,15 @@ int main(int argc, char**argv) {
 		PROFILE_BLOCK("decomposition");
 		decomposeOpenMP(matrix, l);
 	}
-	print("l", l);
-	print("u", matrix);
+	print("hotovo", matrix);
+	//print("l", l);
+	//print("u", matrix);
 
 	{
 		PROFILE_BLOCK("MULT");
 		Matrix<double> check = mult(l, matrix);
-		print("lu", check);
-		print("oriG", orig);
+		//print("lu", check);
+		//print("oriG", orig);
 
 		{
 			PROFILE_BLOCK("CHECK");
@@ -143,6 +147,4 @@ int main(int argc, char**argv) {
 			}
 		}
 	}
-
-
 }

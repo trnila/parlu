@@ -64,7 +64,9 @@ public:
 		assert(getSize() == m.getSize());
 
 		bool equals = true;
-		for(int i = 0, len = size * size; i < len; i++) {
+		int len = len = size * size;
+		#pragma omp parallel for
+		for(int i = 0; i < len; i++) {
 			if(fabs(data[i] - m.data[i]) > 0.001) {
 				equals = false;
 				printf("%f %f\n", data[i], m.data[i]);
