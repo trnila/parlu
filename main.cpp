@@ -9,92 +9,14 @@
 #include <string.h>
 #include <math.h>
 #include "measure.h"
-
-template<typename T>
-class Matrix {
-public:
-	Matrix(int n) {
-		data = new T[n * n]();
-		size = n;
-
-		for(int i = 0; i < n; i++) {
-			data[i * n + i] = 1;
-		}
-	}
-
-	Matrix(const Matrix& m) {
-		size = m.getSize();
-		data = new T[size * size]();
-
-		for(int i = 0; i < size * size; i++) {
-			data[i] = m.data[i];
-		}
-	}
-
-	~Matrix() {
-		if(data) {
-			delete data;
-		}
-	}
-
-	T* operator[](int row) {
-		return &data[row * size];
-	}
-
-	int getSize() const {
-		return size;
-	}
-
-	friend std::ostream& operator<<(std::ostream& out, Matrix<double>& m);
-	friend Matrix<double> load(std::istream&);
-	Matrix<T>& operator=(const Matrix<T> &m) {
-		assert(getSize() == m.getSize());
-
-		for(int i = 0; i < size * size; i++) {
-			m.data[i] = data[i];
-		}
-	}
-
-	bool operator==(const Matrix<T> &m) {
-		assert(getSize() == m.getSize());
-
-		bool equals = true;
-		for(int i = 0, len = size * size; i < len; i++) {
-			if(fabs(data[i] - m.data[i]) > 0.001) {
-				equals = false;
-				printf("%f %f\n", data[i], m.data[i]);
-			}
-		}
-
-		return equals;
-	}
-
-	bool operator!=(const Matrix<T> &m) {
-		return !(*this == m);
-	}
-
-private:
-	int size;
-	T *data;
-};
+#include "matrix.h"
 
 void print(const char* name, Matrix<double> &m) {
 	//std::cout << name << "\n" << m;
 }
 
-std::ostream& operator<<(std::ostream& out, Matrix<double>& m) {
-	for(int r = 0; r < m.size; r++) {
-		for(int c = 0; c < m.size; c++) {
-			out << m[r][c] << ' ';
-		}
-		out << '\n';
-	}
-	std::cout << "====\n";
-	return out;
-}
-
 template<typename T>
-void decompose(Matrix<T>& matrix, Matrix<T>& out) {
+void decomposeOpenMP(Matrix<T> &matrix, Matrix<T> &out) {
 	for(int k = 0; k < matrix.getSize(); k++) {
 		#pragma omp parallel for
 		for(int i = k + 1; i < matrix.getSize(); i++) {
@@ -118,12 +40,13 @@ void decompose(Matrix<T>& matrix, Matrix<T>& out) {
 }
 
 
-Matrix<double> load(std::istream &f) {
+template<typename T>
+Matrix<T> load(std::istream &f) {
 	int size;
 	f >> size;
 	assert(size > 0);
 
-	Matrix<double> m(size);
+	Matrix<T> m(size);
 
 	for(int i = 0; i < size * size; i++) {
 		f >> m.data[i];
@@ -165,7 +88,7 @@ int main(int argc, char**argv) {
 	}
 
 
-	Matrix<double> matrix = load(*input);
+	Matrix<double> matrix = load<double>(*input);
 	Matrix<double> orig(matrix);
 	Matrix<double> l(matrix.getSize());
 
@@ -175,7 +98,7 @@ int main(int argc, char**argv) {
 
 	{
 		PROFILE_BLOCK("decomposition");
-		decompose(matrix, l);
+		decomposeOpenMP(matrix, l);
 	}
 	print("l", l);
 	print("u", matrix);
