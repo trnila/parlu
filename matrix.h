@@ -3,6 +3,8 @@
 template<typename T>
 class Matrix {
 public:
+	Matrix(): Matrix(1) {}
+
 	Matrix(int n) {
 		data = new T[n * n]();
 		size = n;
@@ -39,14 +41,23 @@ public:
 	friend std::ostream& operator<<(std::ostream& out, Matrix<I>& m);
 
 	template<typename I>
-	friend Matrix<I> load(std::istream&);
+	friend Matrix<I> loadTxt(std::istream&);
 
-	Matrix<T>& operator=(const Matrix<T> &m) {
-		assert(getSize() == m.getSize());
+	template<typename I>
+	friend Matrix<I> loadBin(std::istream&);
+
+	Matrix<T>& operator=(Matrix<T> m) {
+		if(getSize() != m.getSize()) {
+			size = m.size;
+			delete data;
+			data = new T[m.size * m.size];
+		}
 
 		for(int i = 0; i < size * size; i++) {
-			m.data[i] = data[i];
+			data[i] = m.data[i];
 		}
+
+		return *this;
 	}
 
 	bool operator==(const Matrix<T> &m) {
