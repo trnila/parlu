@@ -25,7 +25,7 @@ public:
 
 	~Matrix() {
 		if(data) {
-			delete data;
+			delete[] data;
 		}
 	}
 
@@ -49,7 +49,7 @@ public:
 	Matrix<T>& operator=(Matrix<T> m) {
 		if(getSize() != m.getSize()) {
 			size = m.size;
-			delete data;
+			delete[] data;
 			data = new T[m.size * m.size];
 		}
 
