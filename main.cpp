@@ -13,7 +13,9 @@
 #include "measure.h"
 #include "matrix.h"
 
-void print(const char* name, Matrix<double> &m) {
+typedef double CellType;
+
+void print(const char* name, Matrix<CellType> &m) {
 //	std::cout << name << "\n" << m;
 }
 
@@ -114,28 +116,28 @@ int main(int argc, char**argv) {
 		input = &std::cin;
 	}
 
-	Matrix<double> matrix;
+	Matrix<CellType> matrix;
 
 	char *fmt = argv[1];
 	if(strcmp(fmt, "bin") == 0) {
-		matrix = loadBin<double>(*input);
+		matrix = loadBin<CellType>(*input);
 	} else if(strcmp(fmt, "txt") == 0) {
-		matrix = loadTxt<double>(*input);
+		matrix = loadTxt<CellType>(*input);
 	}
 
-	Matrix<double> orig(matrix);
+	Matrix<CellType> orig(matrix);
 
 	std::cout.precision(3);
 	std::cout << std::setw(2);
 	std::cout << std::fixed;
 
-	std::unordered_map<std::string, void (*)(Matrix<double> &, Matrix<double> &)> tests = {
+	std::unordered_map<std::string, void (*)(Matrix<CellType> &, Matrix<CellType> &)> tests = {
 			{"decomposeOpenMP", decomposeOpenMP},
 			{"decomposeC11Threads", decomposeC11Threads},
 	};
 
 	for(auto fn: tests) {
-		Matrix<double> l(matrix.getSize());
+		Matrix<CellType> l(matrix.getSize());
 		matrix = orig;
 
 		std::cout << fn.first << "\n";
@@ -147,7 +149,7 @@ int main(int argc, char**argv) {
 
 		{
 			PROFILE_BLOCK("\tMULT");
-			Matrix<double> check = mult(l, matrix);
+			Matrix<CellType> check = mult(l, matrix);
 			//print("lu", check);
 			//print("oriG", orig);
 
