@@ -89,7 +89,7 @@ template<typename T>
 std::ostream& operator<<(std::ostream& out, Matrix<T>& m) {
 	for(int r = 0; r < m.size; r++) {
 		for(int c = 0; c < m.size; c++) {
-			out << m[r][c] << ' ';
+			out << std::fixed << std::setw(12) << m[r][c] << ' ';
 		}
 		out << '\n';
 	}

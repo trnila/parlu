@@ -16,7 +16,9 @@
 typedef double CellType;
 
 void print(const char* name, Matrix<CellType> &m) {
-//	std::cout << name << "\n" << m;
+	if(m.getSize() <= 20) {
+		std::cout << name << "\n" << m;
+	}
 }
 
 /**
@@ -128,8 +130,6 @@ int main(int argc, char**argv) {
 	Matrix<CellType> orig(matrix);
 
 	std::cout.precision(3);
-	std::cout << std::setw(2);
-	std::cout << std::fixed;
 
 	std::unordered_map<std::string, void (*)(Matrix<CellType> &, Matrix<CellType> &)> tests = {
 			{"decomposeOpenMP", decomposeOpenMP},
@@ -150,15 +150,15 @@ int main(int argc, char**argv) {
 		{
 			PROFILE_BLOCK("\tMULT");
 			Matrix<CellType> check = mult(l, matrix);
-			//print("lu", check);
-			//print("oriG", orig);
 
-			{
-				PROFILE_BLOCK("\tCHECK");
-				if (orig != check) {
-					std::cout << "===ERROR===\n";
-				}
+			if (orig != check) {
+				std::cout << "===ERROR===\n";
 			}
+
+			print("A=", orig);
+			print("L=", l);
+			print("U=", matrix);
+			print("A=L*U=", check);
 		}
 	}
 }
