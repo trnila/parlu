@@ -2,12 +2,11 @@
 #include <random>
 #include <iomanip>
 #include <functional>
-#include <unistd.h>
 #include <string.h>
 
 void writeBin(int n, double from, double to) {
 	// write dimension of matrix
-	write(1, &n, sizeof(n));
+	fwrite(&n, sizeof(n), 1, stdout);
 
 	#pragma omp parallel
 	{
@@ -23,7 +22,7 @@ void writeBin(int n, double from, double to) {
 			}
 
 			#pragma omp critical
-			write(1, values, sizeof(*values) * n);
+			fwrite(values, sizeof(*values), n, stdout);
 		}
 	}
 }
