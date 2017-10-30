@@ -4,6 +4,7 @@
 #include <condition_variable>
 #include <vector>
 #include <queue>
+#include <thread>
 
 class Barrier {
 public:

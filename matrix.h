@@ -96,3 +96,33 @@ std::ostream& operator<<(std::ostream& out, Matrix<T>& m) {
 	std::cout << "====\n";
 	return out;
 }
+
+template<typename T>
+Matrix<T> loadTxt(std::istream &f) {
+	PROFILE_BLOCK("load");
+	int size;
+	f >> size;
+	assert(size > 0);
+
+	Matrix<T> m(size);
+
+	for(int i = 0; i < size * size; i++) {
+		f >> m.data[i];
+	}
+
+	return m;
+}
+
+template<typename T>
+Matrix<T> loadBin(std::istream &f) {
+	PROFILE_BLOCK("loadBin");
+	int size;
+
+	f.read((char*) &size, sizeof(size));
+	assert(size > 0);
+
+	Matrix<T> m(size);
+	f.read((char*) m.data, size * size * sizeof(T));
+
+	return m;
+}
