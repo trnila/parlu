@@ -109,6 +109,8 @@ int main(int argc, char**argv) {
 		return 1;
 	}
 
+	std::cout.precision(3);
+
 	std::istream *input;
 	std::ifstream file;
 	if(argc == 3) {
@@ -129,8 +131,6 @@ int main(int argc, char**argv) {
 
 	Matrix<CellType> orig(matrix);
 
-	std::cout.precision(3);
-
 	std::unordered_map<std::string, void (*)(Matrix<CellType> &, Matrix<CellType> &)> tests = {
 			{"decomposeOpenMP", decomposeOpenMP},
 			{"decomposeC11Threads", decomposeC11Threads},
@@ -148,8 +148,11 @@ int main(int argc, char**argv) {
 		}
 
 		{
-			PROFILE_BLOCK("\tMULT");
-			Matrix<CellType> check = mult(l, matrix);
+			Matrix<CellType> check;
+			{
+				PROFILE_BLOCK("\tMULT");
+				check = mult(l, matrix);
+			}
 
 			if (orig != check) {
 				std::cout << "===ERROR===\n";
