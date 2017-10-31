@@ -27,14 +27,6 @@ public:
 		if(data) {
 			delete[] data;
 		}
-
-		if(rows) {
-			delete[] rows;
-		}
-	}
-
-	void swapRows(int a, int b) {
-		std::swap(rows[a], rows[b]);
 	}
 
 	T* operator[](int row) {
@@ -90,7 +82,6 @@ public:
 private:
 	int size = 0;
 	T *data = nullptr;
-	int *rows = nullptr;
 
 	void resize(int size) {
 		if(size == this->size) {
@@ -104,15 +95,6 @@ private:
 		}
 
 		data = new T[size * size]();
-
-		if(rows) {
-			delete[] rows;
-		}
-
-		rows = new int[size];
-		for(int i = 0; i < size; i++) {
-			rows[i] = i;
-		}
 	}
 };
 
