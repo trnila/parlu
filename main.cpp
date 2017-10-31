@@ -41,8 +41,11 @@ void decomposeOpenMP(Matrix<T> &matrix, Matrix<T> &out, Matrix<T> &P) {
 			for(int i = 0; i < size; i++) {
 				std::swap(matrix[k][i], matrix[maxIndex][i]);
 				std::swap(P[i][k], P[i][maxIndex]);
-				std::swap(out[k][i], out[maxIndex][i]);
 			};
+
+			for(int i = 0; i < k; i++) {
+				std::swap(out[k][i], out[maxIndex][i]);
+			}
 		}
 
 		#pragma omp parallel for
@@ -51,6 +54,7 @@ void decomposeOpenMP(Matrix<T> &matrix, Matrix<T> &out, Matrix<T> &P) {
 			if(isnan(out[i][k])) {
 				out[i][k] = 0;
 			}
+			matrix[i][k] = 0;
 		}
 
 		#pragma omp parallel for
@@ -61,21 +65,6 @@ void decomposeOpenMP(Matrix<T> &matrix, Matrix<T> &out, Matrix<T> &P) {
 					matrix[i][j] = 0;
 				}
 			}
-		}
-	}
-
-	#pragma omp parallel for
-	for (int r = 0; r < size; r++) {
-		for (int i = 0; i < r; ++i) {
-			matrix[r][i] = 0;
-		}
-	}
-
-	#pragma omp parallel for
-	for (int r = 0; r < size; r++) {
-		out[r][r] = 1;
-		for (int i = r + 1; i < size; ++i) {
-			out[r][i] = 0;
 		}
 	}
 }
@@ -166,7 +155,7 @@ int main(int argc, char**argv) {
 
 	std::unordered_map<std::string, void (*)(Matrix<CellType> &, Matrix<CellType> &, Matrix<CellType> &)> tests = {
 			{"decomposeOpenMP", decomposeOpenMP},
-			{"decomposeC11Threads", decomposeC11Threads},
+			//{"decomposeC11Threads", decomposeC11Threads},
 	};
 
 	for(auto fn: tests) {
@@ -193,7 +182,6 @@ int main(int argc, char**argv) {
 				if (orig != check) {
 					std::cout << "===ERROR===\n";
 					returnCode = 1;
-					break;
 				}
 			}
 
