@@ -1,5 +1,7 @@
 #pragma once
 
+const double CMP_PRECISION = 0.001;
+
 template<typename T>
 class Matrix {
 public:
@@ -73,7 +75,7 @@ public:
 		int len = size * size;
 		#pragma omp parallel for
 		for(int i = 0; i < len; i++) {
-			if(fabs(data[i] - m.data[i]) > 0.001 || isnan(data[i]) || isnan(m.data[i]) || isinf(m.data[i]) || isinf(m.data[i])) {
+			if(fabs(data[i] - m.data[i]) > CMP_PRECISION || isnan(data[i]) || isnan(m.data[i]) || isinf(m.data[i]) || isinf(m.data[i])) {
 				equals = false;
 			}
 		}

@@ -25,8 +25,13 @@ void print(const char* name, Matrix<CellType> &m) {
  * when function completes, matrix contains U, out contains L matrix
  */
 template<typename T>
-void decomposeOpenMP(Matrix<T> &matrix, Matrix<T> &out, Matrix<T> &P) {
+void decomposeOpenMP(Matrix<T> &matrix, Matrix<T> &out, std::vector<int> &P) {
 	const int size = matrix.getSize();
+
+	for(int i = 0; i < size; i++) {
+		P[i] = i;
+	}
+
 	for(int k = 0; k < size; k++) {
 		int maxIndex = k;
 		T maxVal = fabs(matrix[k][k]);
@@ -40,8 +45,9 @@ void decomposeOpenMP(Matrix<T> &matrix, Matrix<T> &out, Matrix<T> &P) {
 		if(maxIndex != k) {
 			for(int i = 0; i < size; i++) {
 				std::swap(matrix[k][i], matrix[maxIndex][i]);
-				std::swap(P[i][k], P[i][maxIndex]);
 			};
+
+			std::swap(P[k], P[maxIndex]);
 
 			for(int i = 0; i < k; i++) {
 				std::swap(out[k][i], out[maxIndex][i]);
@@ -125,6 +131,21 @@ void saveImage(const char *file, Matrix<T> &a) {
 	}
 }
 
+// a == P * b ?
+template<typename T>
+bool equals(const Matrix<T> &a, const Matrix<T> &b, std::vector<int> &P) {
+	for(int i = 0; i < P.size(); i++) {
+		for(int j = 0; j < P.size(); j++) {
+			if(fabs(a[P[i]][j] - b[i][j]) > CMP_PRECISION) {
+				printf(">>%d %d %f != %f\n", i, P[i], a[P[i]][j], b[i][j]);
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
 int main(int argc, char**argv) {
 	int returnCode = 0;
 	if(argc < 2) {
@@ -153,7 +174,7 @@ int main(int argc, char**argv) {
 		orig = loadTxt<CellType>(*input);
 	}
 
-	std::unordered_map<std::string, void (*)(Matrix<CellType> &, Matrix<CellType> &, Matrix<CellType> &)> tests = {
+	std::unordered_map<std::string, void (*)(Matrix<CellType> &, Matrix<CellType> &, std::vector<int> &)> tests = {
 			{"decomposeOpenMP", decomposeOpenMP},
 			//{"decomposeC11Threads", decomposeC11Threads},
 	};
@@ -161,7 +182,8 @@ int main(int argc, char**argv) {
 	for(auto fn: tests) {
 		Matrix<CellType> matrix = orig;
 		Matrix<CellType> l(matrix.getSize());
-		Matrix<CellType> P(matrix.getSize());
+		std::vector<int> P;
+		P.resize(matrix.getSize());
 
 		std::cout << fn.first << "\n";
 
@@ -174,12 +196,12 @@ int main(int argc, char**argv) {
 			Matrix<CellType> check;
 			{
 				PROFILE_BLOCK("\tmult");
-				check = P * l * matrix; // P * L * U
+				check = l * matrix; // P * L * U
 			}
 
 			{
 				PROFILE_BLOCK("\tcheck");
-				if (orig != check) {
+				if (!equals(orig, check, P)) {
 					std::cout << "===ERROR===\n";
 					returnCode = 1;
 				}
@@ -188,7 +210,6 @@ int main(int argc, char**argv) {
 			print("A=", orig);
 			print("L=", l);
 			print("U=", matrix);
-			print("P=", P);
 			print("A=P*L*U=", check);
 
 			{
