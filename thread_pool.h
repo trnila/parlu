@@ -11,20 +11,31 @@ public:
 	Barrier(int size): size(size) {}
 
 	void done() {
-		std::unique_lock<std::mutex> lock(mutex);
-		size--;
-		if(size <= 0) {
+		bool unlock = false;
+		{
+			std::unique_lock <std::mutex> lock(mutex);
+			assert(size > 0);
+			size--;
+			unlock = size <= 0;
+
+		}
+
+		if(unlock) {
 			cond.notify_one();
 		}
 	}
 
 	void wait() {
 		std::unique_lock<std::mutex> lock(mutex);
-		cond.wait(lock, [&](){return size == 0;});
+		cond.wait(lock, [&](){return size <= 0;});
 	}
 
 	void operator=(const Barrier &b) {
 		size = b.size;
+	}
+
+	int getSize() const {
+		return size;
 	}
 
 private:
@@ -90,7 +101,7 @@ public:
 	}
 
 	void add(JobFn fn, Barrier &barrier) {
-		add([&]() {
+		add([fn, &barrier]() {
 			BarrierReleaser releaser(barrier);
 			fn();
 		});

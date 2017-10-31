@@ -22,6 +22,12 @@ void print(const char* name, Matrix<CellType> &m) {
 	}
 }
 
+void initPermVector(std::vector<int> &P) {
+	for(int i = 0; i < P.size(); i++) {
+		P[i] = i;
+	}
+}
+
 /**
  * when function completes, matrix contains U, out contains L matrix
  */
@@ -29,9 +35,7 @@ template<typename T>
 void decomposeOpenMP(Matrix<T> &matrix, Matrix<T> &out, std::vector<int> &P) {
 	const int size = matrix.getSize();
 
-	for(int i = 0; i < size; i++) {
-		P[i] = i;
-	}
+	initPermVector(P);
 
 	for(int k = 0; k < size; k++) {
 		int maxIndex = k;
@@ -77,36 +81,60 @@ void decomposeOpenMP(Matrix<T> &matrix, Matrix<T> &out, std::vector<int> &P) {
 }
 
 template<typename T>
-void decomposeC11Threads(Matrix<T> &matrix, Matrix<T> &out, Matrix<T> &P) {
+void decomposeC11Threads(Matrix<T> &matrix, Matrix<T> &out, std::vector<int> &P) {
 	ThreadPool pool(4);
-	for(int k = 0; k < matrix.getSize(); k++) {
-		for(int i = k + 1; i < matrix.getSize(); i++) {
-			out[i][k] = matrix[i][k] / matrix[k][k];
-		}
 
-		Barrier b(matrix.getSize() - (k + 1));
-		for(int j = k + 1; j < matrix.getSize(); j++) {
-			pool.add([&matrix, &out, j, k, &b]() {
-				BarrierReleaser releaser(b);
-				for (int i = k + 1; i < matrix.getSize(); i++) {
-					matrix[i][j] -= out[i][k] * matrix[k][j];
-				}
-			});
-		}
+	const int size = matrix.getSize();
+	initPermVector(P);
 
-		b.wait();
-	}
-
-	Barrier b(matrix.getSize());
-	for (int r = 0; r < matrix.getSize(); r++) {
-		pool.add([&matrix, r, &b]() {
-			BarrierReleaser releaser(b);
-			for (int i = 0; i < r; ++i) {
-				matrix[r][i] = 0;
+	for(int k = 0; k < size; k++) {
+		int maxIndex = k;
+		T maxVal = fabs(matrix[k][k]);
+		for(int i = k + 1; i < size; i++) {
+			if(fabs(matrix[i][k]) > maxVal) {
+				maxVal = fabs(matrix[i][k]);
+				maxIndex = i;
 			}
-		});
+		}
+		
+		if(maxIndex != k) {
+			for(int i = 0; i < size; i++) {
+				std::swap(matrix[k][i], matrix[maxIndex][i]);
+			};
+
+			std::swap(P[k], P[maxIndex]);
+
+			for(int i = 0; i < k; i++) {
+				std::swap(out[k][i], out[maxIndex][i]);
+			}
+		}
+
+		for(int i = k + 1; i < size; i++) {
+			out[i][k] = matrix[i][k] / matrix[k][k];
+			if(isnan(out[i][k])) {
+				out[i][k] = 0;
+			}
+			matrix[i][k] = 0;
+		}
+
+		int workSize = 200;
+		Barrier barrier((size - 1 - k - 1 + workSize) / workSize);
+		for(int j = k + 1; j < size; j += workSize) {
+			int from = j;
+			int to = std::min(size, j + workSize);
+			pool.add([&matrix, &out, k, from, size, to]() {
+				for(int j = from; j < to; j++) {
+					for (int i = k + 1; i < size; i++) {
+						matrix[i][j] -= out[i][k] * matrix[k][j];
+						if (isnan(matrix[i][j])) {
+							matrix[i][j] = 0;
+						}
+					}
+				}
+			}, barrier);
+		}
+		barrier.wait();
 	}
-	b.wait();
 }
 
 int mapTo(double x, double fromMin, double fromMax, int toMin, int toMax) {
@@ -194,7 +222,7 @@ int main(int argc, char**argv) {
 
 	std::unordered_map<std::string, void (*)(Matrix<CellType> &, Matrix<CellType> &, std::vector<int> &)> tests = {
 			{"decomposeOpenMP", decomposeOpenMP},
-			//{"decomposeC11Threads", decomposeC11Threads},
+			{"decomposeC11Threads", decomposeC11Threads},
 	};
 
 	for(auto fn: tests) {
