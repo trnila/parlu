@@ -103,6 +103,30 @@ Matrix<T> mult(Matrix<T>& a, Matrix<T>& b) {
 	return res;
 }
 
+
+int mapTo(int x, int fromMin, int fromMax, int toMin, int toMax) {
+	return (x - fromMin) * (toMax - toMin) / ((double) fromMax - fromMin) + toMin;
+}
+
+template<typename T>
+void image(const char *file, Matrix<T> &a) {
+	std::ofstream out(file);
+	out << "P3\n"
+	    << a.getSize() << " " << a.getSize() << "\n"
+		<< "255\n";
+
+	for(int row = 0; row < a.getSize(); row++) {
+		for(int col = 0; col < a.getSize(); col++) {
+			int val = mapTo(a[row][col], -10000, 10000, 0, 255 * 255 * 255);
+			out << ((val & 0xFF0000) >> 16) << " "
+			    << ((val & 0x00FF00) >> 8) << " "
+			    << (val & 0x0000FF) << " "
+			    << " ";
+		}
+		out << '\n';
+	}
+}
+
 int main(int argc, char**argv) {
 	if(argc < 2) {
 		std::cerr << argv[0] << " bin|txt [input]\n";
@@ -162,6 +186,11 @@ int main(int argc, char**argv) {
 			print("L=", l);
 			print("U=", matrix);
 			print("A=L*U=", check);
+
+			image("orig.ppm", orig);
+			image("l.ppm", l);
+			image("u.ppm", matrix);
+			image("check.ppm", check);
 		}
 	}
 }
