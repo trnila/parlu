@@ -156,26 +156,23 @@ int main(int argc, char**argv) {
 
 	ThreadPool workers(4);
 
-	Matrix<CellType> matrix;
-
+	Matrix<CellType> orig;
 	char *fmt = argv[1];
 	if(strcmp(fmt, "bin") == 0) {
-		matrix = loadBin<CellType>(*input);
+		orig = loadBin<CellType>(*input);
 	} else if(strcmp(fmt, "txt") == 0) {
-		matrix = loadTxt<CellType>(*input);
+		orig = loadTxt<CellType>(*input);
 	}
-
-	Matrix<CellType> orig(matrix);
 
 	std::unordered_map<std::string, void (*)(Matrix<CellType> &, Matrix<CellType> &, Matrix<CellType> &)> tests = {
 			{"decomposeOpenMP", decomposeOpenMP},
-			//{"decomposeC11Threads", decomposeC11Threads},
+			{"decomposeC11Threads", decomposeC11Threads},
 	};
 
 	for(auto fn: tests) {
+		Matrix<CellType> matrix = orig;
 		Matrix<CellType> l(matrix.getSize());
 		Matrix<CellType> P(matrix.getSize());
-		matrix = orig;
 
 		std::cout << fn.first << "\n";
 
@@ -196,6 +193,7 @@ int main(int argc, char**argv) {
 				if (orig != check) {
 					std::cout << "===ERROR===\n";
 					returnCode = 1;
+					break;
 				}
 			}
 
