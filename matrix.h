@@ -41,6 +41,10 @@ public:
 		return size;
 	}
 
+	const T* raw() const {
+		return data;
+	}
+
 	template<typename I>
 	friend std::ostream& operator<<(std::ostream& out, Matrix<I>& m);
 
