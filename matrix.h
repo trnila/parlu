@@ -6,8 +6,7 @@ public:
 	Matrix(): Matrix(1) {}
 
 	Matrix(int n) {
-		data = new T[n * n]();
-		size = n;
+		resize(n);
 
 		for(int i = 0; i < n; i++) {
 			data[i * n + i] = 1;
@@ -15,8 +14,7 @@ public:
 	}
 
 	Matrix(const Matrix& m) {
-		size = m.getSize();
-		data = new T[size * size]();
+		resize(m.size);
 
 		for(int i = 0; i < size * size; i++) {
 			data[i] = m.data[i];
@@ -27,6 +25,14 @@ public:
 		if(data) {
 			delete[] data;
 		}
+
+		if(rows) {
+			delete[] rows;
+		}
+	}
+
+	void swapRows(int a, int b) {
+		std::swap(rows[a], rows[b]);
 	}
 
 	T* operator[](int row) {
@@ -37,7 +43,7 @@ public:
 		return &data[row * size];
 	}
 
-	int getSize() const {
+	const int getSize() const {
 		return size;
 	}
 
@@ -51,11 +57,7 @@ public:
 	friend Matrix<I> loadBin(std::istream&);
 
 	Matrix<T>& operator=(Matrix<T> m) {
-		if(getSize() != m.getSize()) {
-			size = m.size;
-			delete[] data;
-			data = new T[m.size * m.size];
-		}
+		resize(m.size);
 
 		for(int i = 0; i < size * size; i++) {
 			data[i] = m.data[i];
@@ -68,10 +70,10 @@ public:
 		assert(getSize() == m.getSize());
 
 		bool equals = true;
-		int len = len = size * size;
+		int len = size * size;
 		#pragma omp parallel for
 		for(int i = 0; i < len; i++) {
-			if(fabs(data[i] - m.data[i]) > 0.001) {
+			if(fabs(data[i] - m.data[i]) > 0.001 || isnan(data[i]) || isnan(m.data[i]) || isinf(m.data[i]) || isinf(m.data[i])) {
 				equals = false;
 			}
 		}
@@ -84,8 +86,32 @@ public:
 	}
 
 private:
-	int size;
-	T *data;
+	int size = 0;
+	T *data = nullptr;
+	int *rows = nullptr;
+
+	void resize(int size) {
+		if(size == this->size) {
+			return;
+		}
+
+		this->size = size;
+
+		if(data) {
+			delete[] data;
+		}
+
+		data = new T[size * size]();
+
+		if(rows) {
+			delete[] rows;
+		}
+
+		rows = new int[size];
+		for(int i = 0; i < size; i++) {
+			rows[i] = i;
+		}
+	}
 };
 
 template<typename T>
@@ -94,15 +120,15 @@ Matrix<T> operator*(const Matrix<T>& a, const Matrix<T>& b) {
 		throw std::runtime_error("Could not multiply matrixes with different size");
 	}
 
-
 	Matrix<T> res(a.getSize());
-#pragma omp parallel for
+	#pragma omp parallel for
 	for(int c = 0; c < a.getSize(); c++) {
 		for(int r = 0; r < a.getSize(); r++) {
-			res[r][c] = 0;
+			double val = 0;
 			for(int j = 0; j < a.getSize(); j++) {
-				res[r][c] += a[r][j] * b[j][c];
+				val += a[r][j] * b[j][c];
 			}
+			res[r][c] = val;
 		}
 	}
 

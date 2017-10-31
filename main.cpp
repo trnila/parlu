@@ -117,7 +117,7 @@ int mapTo(int x, int fromMin, int fromMax, int toMin, int toMax) {
 }
 
 template<typename T>
-void image(const char *file, Matrix<T> &a) {
+void saveImage(const char *file, Matrix<T> &a) {
 	std::ofstream out(file);
 	out << "P3\n"
 	    << a.getSize() << " " << a.getSize() << "\n"
@@ -153,6 +153,8 @@ int main(int argc, char**argv) {
 		input = &std::cin;
 	}
 
+	ThreadPool workers(4);
+
 	Matrix<CellType> matrix;
 
 	char *fmt = argv[1];
@@ -166,7 +168,7 @@ int main(int argc, char**argv) {
 
 	std::unordered_map<std::string, void (*)(Matrix<CellType> &, Matrix<CellType> &, Matrix<CellType> &)> tests = {
 			{"decomposeOpenMP", decomposeOpenMP},
-			//{"decomposeC11Threads", decomposeC11Threads},
+			{"decomposeC11Threads", decomposeC11Threads},
 	};
 
 	for(auto fn: tests) {
@@ -184,25 +186,43 @@ int main(int argc, char**argv) {
 		{
 			Matrix<CellType> check;
 			{
-				PROFILE_BLOCK("\tMULT");
+				PROFILE_BLOCK("\tmult");
 				check = P * l * matrix; // P * L * U
 			}
 
-			if (orig != check) {
-				std::cout << "===ERROR===\n";
-				returnCode = 1;
+			{
+				PROFILE_BLOCK("\tcheck");
+				if (orig != check) {
+					std::cout << "===ERROR===\n";
+					returnCode = 1;
+				}
 			}
 
 			print("A=", orig);
 			print("L=", l);
 			print("U=", matrix);
 			print("P=", P);
-			print("A=L*U=", check);
+			print("A=P*L*U=", check);
 
-			image("orig.ppm", orig);
-			image("l.ppm", l);
-			image("u.ppm", matrix);
-			image("check.ppm", check);
+			{
+				PROFILE_BLOCK("\tsave images");
+				std::unordered_map<std::string, Matrix<CellType>*> map = {
+						{"orig.ppm", &orig},
+						{"l.ppm", &l},
+						{"u.ppm", &matrix},
+						{"check.ppm", &check}
+
+				};
+
+				Barrier b(map.size());
+				for(auto &job: map) {
+					workers.add([&]() {
+						BarrierReleaser releaser(b);
+						saveImage(job.first.c_str(), *job.second);
+					});
+				}
+				b.wait();
+			}
 		}
 	}
 
