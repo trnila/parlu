@@ -25,17 +25,39 @@ void print(const char* name, Matrix<CellType> &m) {
  * when function completes, matrix contains U, out contains L matrix
  */
 template<typename T>
-void decomposeOpenMP(Matrix<T> &matrix, Matrix<T> &out) {
+void decomposeOpenMP(Matrix<T> &matrix, Matrix<T> &out, Matrix<T> &P) {
 	for(int k = 0; k < matrix.getSize(); k++) {
+		int maxIndex = k;
+		T maxVal = fabs(matrix[k][k]);
+		for(int i = k + 1; i < matrix.getSize(); i++) {
+			if(fabs(matrix[i][k]) > maxVal) {
+				maxVal = fabs(matrix[i][k]);
+				maxIndex = i;
+			}
+		}
+
+		if(maxIndex != k) {
+			for(int i = 0; i < matrix.getSize(); i++) {
+				std::swap(matrix[k][i], matrix[maxIndex][i]);
+				std::swap(P[k][i], P[maxIndex][i]);
+			}
+		}
+
 		#pragma omp parallel for
 		for(int i = k + 1; i < matrix.getSize(); i++) {
 			out[i][k] = matrix[i][k] / matrix[k][k];
+			if(isnan(out[i][k])) {
+				out[i][k] = 0;
+			}
 		}
 
 		#pragma omp parallel for
 		for(int j = k + 1; j < matrix.getSize(); j++) {
 			for(int i = k + 1; i < matrix.getSize(); i++) {
 				matrix[i][j] -= out[i][k] * matrix[k][j];
+				if(isnan(matrix[i][j])) {
+					matrix[i][j] = 0;
+				}
 			}
 		}
 	}
@@ -49,7 +71,7 @@ void decomposeOpenMP(Matrix<T> &matrix, Matrix<T> &out) {
 }
 
 template<typename T>
-void decomposeC11Threads(Matrix<T> &matrix, Matrix<T> &out) {
+void decomposeC11Threads(Matrix<T> &matrix, Matrix<T> &out, Matrix<T> &P) {
 	ThreadPool pool(4);
 	for(int k = 0; k < matrix.getSize(); k++) {
 		for(int i = k + 1; i < matrix.getSize(); i++) {
@@ -155,27 +177,29 @@ int main(int argc, char**argv) {
 
 	Matrix<CellType> orig(matrix);
 
-	std::unordered_map<std::string, void (*)(Matrix<CellType> &, Matrix<CellType> &)> tests = {
+	std::unordered_map<std::string, void (*)(Matrix<CellType> &, Matrix<CellType> &, Matrix<CellType> &)> tests = {
 			{"decomposeOpenMP", decomposeOpenMP},
 			{"decomposeC11Threads", decomposeC11Threads},
 	};
 
 	for(auto fn: tests) {
 		Matrix<CellType> l(matrix.getSize());
+		Matrix<CellType> P(matrix.getSize());
 		matrix = orig;
 
 		std::cout << fn.first << "\n";
 
 		{
 			PROFILE_BLOCK("\tdecomposition");
-			fn.second(matrix, l);
+			fn.second(matrix, l, P);
 		}
 
 		{
 			Matrix<CellType> check;
 			{
 				PROFILE_BLOCK("\tMULT");
-				check = mult(l, matrix);
+				auto res = mult(l, matrix);
+				check = mult(P, res);
 			}
 
 			if (orig != check) {
@@ -185,7 +209,7 @@ int main(int argc, char**argv) {
 			print("A=", orig);
 			print("L=", l);
 			print("U=", matrix);
-			print("A=L*U=", check);
+			print("A=P*L*U=", check);
 
 			image("orig.ppm", orig);
 			image("l.ppm", l);
