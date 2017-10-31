@@ -33,6 +33,10 @@ public:
 		return &data[row * size];
 	}
 
+	const T* operator[](int row) const {
+		return &data[row * size];
+	}
+
 	int getSize() const {
 		return size;
 	}
@@ -69,7 +73,6 @@ public:
 		for(int i = 0; i < len; i++) {
 			if(fabs(data[i] - m.data[i]) > 0.001) {
 				equals = false;
-				//printf("%f %f\n", data[i], m.data[i]);
 			}
 		}
 
@@ -86,6 +89,27 @@ private:
 };
 
 template<typename T>
+Matrix<T> operator*(const Matrix<T>& a, const Matrix<T>& b) {
+	if(a.getSize() != b.getSize()) {
+		throw std::runtime_error("Could not multiply matrixes with different size");
+	}
+
+
+	Matrix<T> res(a.getSize());
+#pragma omp parallel for
+	for(int c = 0; c < a.getSize(); c++) {
+		for(int r = 0; r < a.getSize(); r++) {
+			res[r][c] = 0;
+			for(int j = 0; j < a.getSize(); j++) {
+				res[r][c] += a[r][j] * b[j][c];
+			}
+		}
+	}
+
+	return res;
+}
+
+template<typename T>
 std::ostream& operator<<(std::ostream& out, Matrix<T>& m) {
 	for(int r = 0; r < m.size; r++) {
 		for(int c = 0; c < m.size; c++) {
@@ -93,7 +117,7 @@ std::ostream& operator<<(std::ostream& out, Matrix<T>& m) {
 		}
 		out << '\n';
 	}
-	std::cout << "====\n";
+	std::cout << '\n';
 	return out;
 }
 

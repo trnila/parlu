@@ -112,29 +112,6 @@ void decomposeC11Threads(Matrix<T> &matrix, Matrix<T> &out, Matrix<T> &P) {
 	b.wait();
 }
 
-
-template<typename T>
-Matrix<T> mult(Matrix<T>& a, Matrix<T>& b) {
-	if(a.getSize() != b.getSize()) {
-		throw std::runtime_error("Could not multiply matrixes with different size");
-	}
-
-
-	Matrix<T> res(a.getSize());
-	#pragma omp parallel for
-	for(int c = 0; c < a.getSize(); c++) {
-		for(int r = 0; r < a.getSize(); r++) {
-			res[r][c] = 0;
-			for(int j = 0; j < a.getSize(); j++) {
-				res[r][c] += a[r][j] * b[j][c];
-			}
-		}
-	}
-
-	return res;
-}
-
-
 int mapTo(int x, int fromMin, int fromMax, int toMin, int toMax) {
 	return (x - fromMin) * (toMax - toMin) / ((double) fromMax - fromMin) + toMin;
 }
@@ -208,9 +185,7 @@ int main(int argc, char**argv) {
 			Matrix<CellType> check;
 			{
 				PROFILE_BLOCK("\tMULT");
-				// P * L * U
-				auto a = mult(P, l);
-				check = mult(a, matrix);
+				check = P * l * matrix; // P * L * U
 			}
 
 			if (orig != check) {
