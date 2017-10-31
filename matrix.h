@@ -120,12 +120,14 @@ Matrix<T> operator*(const Matrix<T>& a, const Matrix<T>& b) {
 		throw std::runtime_error("Could not multiply matrixes with different size");
 	}
 
-	Matrix<T> res(a.getSize());
+	const int size = a.getSize();
+
+	Matrix<T> res(size);
 	#pragma omp parallel for
-	for(int c = 0; c < a.getSize(); c++) {
-		for(int r = 0; r < a.getSize(); r++) {
+	for(int c = 0; c < size; c++) {
+		for(int r = 0; r < size; r++) {
 			double val = 0;
-			for(int j = 0; j < a.getSize(); j++) {
+			for(int j = 0; j < size; j++) {
 				val += a[r][j] * b[j][c];
 			}
 			res[r][c] = val;

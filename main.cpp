@@ -26,10 +26,11 @@ void print(const char* name, Matrix<CellType> &m) {
  */
 template<typename T>
 void decomposeOpenMP(Matrix<T> &matrix, Matrix<T> &out, Matrix<T> &P) {
-	for(int k = 0; k < matrix.getSize(); k++) {
+	const int size = matrix.getSize();
+	for(int k = 0; k < size; k++) {
 		int maxIndex = k;
 		T maxVal = fabs(matrix[k][k]);
-		for(int i = k + 1; i < matrix.getSize(); i++) {
+		for(int i = k + 1; i < size; i++) {
 			if(fabs(matrix[i][k]) > maxVal) {
 				maxVal = fabs(matrix[i][k]);
 				maxIndex = i;
@@ -37,7 +38,7 @@ void decomposeOpenMP(Matrix<T> &matrix, Matrix<T> &out, Matrix<T> &P) {
 		}
 
 		if(maxIndex != k) {
-			for(int i = 0; i < matrix.getSize(); i++) {
+			for(int i = 0; i < size; i++) {
 				std::swap(matrix[k][i], matrix[maxIndex][i]);
 				std::swap(P[i][k], P[i][maxIndex]);
 				std::swap(out[k][i], out[maxIndex][i]);
@@ -45,7 +46,7 @@ void decomposeOpenMP(Matrix<T> &matrix, Matrix<T> &out, Matrix<T> &P) {
 		}
 
 		#pragma omp parallel for
-		for(int i = k + 1; i < matrix.getSize(); i++) {
+		for(int i = k + 1; i < size; i++) {
 			out[i][k] = matrix[i][k] / matrix[k][k];
 			if(isnan(out[i][k])) {
 				out[i][k] = 0;
@@ -53,8 +54,8 @@ void decomposeOpenMP(Matrix<T> &matrix, Matrix<T> &out, Matrix<T> &P) {
 		}
 
 		#pragma omp parallel for
-		for(int j = k + 1; j < matrix.getSize(); j++) {
-			for(int i = k + 1; i < matrix.getSize(); i++) {
+		for(int j = k + 1; j < size; j++) {
+			for(int i = k + 1; i < size; i++) {
 				matrix[i][j] -= out[i][k] * matrix[k][j];
 				if(isnan(matrix[i][j])) {
 					matrix[i][j] = 0;
@@ -64,16 +65,16 @@ void decomposeOpenMP(Matrix<T> &matrix, Matrix<T> &out, Matrix<T> &P) {
 	}
 
 	#pragma omp parallel for
-	for (int r = 0; r < matrix.getSize(); r++) {
+	for (int r = 0; r < size; r++) {
 		for (int i = 0; i < r; ++i) {
 			matrix[r][i] = 0;
 		}
 	}
 
 	#pragma omp parallel for
-	for (int r = 0; r < matrix.getSize(); r++) {
+	for (int r = 0; r < size; r++) {
 		out[r][r] = 1;
-		for (int i = r + 1; i < matrix.getSize(); ++i) {
+		for (int i = r + 1; i < size; ++i) {
 			out[r][i] = 0;
 		}
 	}
@@ -168,7 +169,7 @@ int main(int argc, char**argv) {
 
 	std::unordered_map<std::string, void (*)(Matrix<CellType> &, Matrix<CellType> &, Matrix<CellType> &)> tests = {
 			{"decomposeOpenMP", decomposeOpenMP},
-			{"decomposeC11Threads", decomposeC11Threads},
+			//{"decomposeC11Threads", decomposeC11Threads},
 	};
 
 	for(auto fn: tests) {
