@@ -89,6 +89,13 @@ public:
 		cond.notify_one();
 	}
 
+	void add(JobFn fn, Barrier &barrier) {
+		add([&]() {
+			BarrierReleaser releaser(barrier);
+			fn();
+		});
+	}
+
 private:
 	std::vector<std::thread> threads;
 	std::queue<std::function<void()>> queue;

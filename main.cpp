@@ -240,14 +240,13 @@ int main(int argc, char**argv) {
 
 				};
 
-				Barrier b(map.size());
+				Barrier barrier(map.size());
 				for(auto &job: map) {
 					workers.add([&]() {
-						BarrierReleaser releaser(b);
 						saveImage(job.first.c_str(), *job.second);
-					});
+					}, barrier);
 				}
-				b.wait();
+				barrier.wait();
 			}
 		}
 	}
