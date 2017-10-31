@@ -39,8 +39,9 @@ void decomposeOpenMP(Matrix<T> &matrix, Matrix<T> &out, Matrix<T> &P) {
 		if(maxIndex != k) {
 			for(int i = 0; i < matrix.getSize(); i++) {
 				std::swap(matrix[k][i], matrix[maxIndex][i]);
-				std::swap(P[k][i], P[maxIndex][i]);
-			}
+				std::swap(P[i][k], P[i][maxIndex]);
+				std::swap(out[k][i], out[maxIndex][i]);
+			};
 		}
 
 		#pragma omp parallel for
@@ -66,6 +67,14 @@ void decomposeOpenMP(Matrix<T> &matrix, Matrix<T> &out, Matrix<T> &P) {
 	for (int r = 0; r < matrix.getSize(); r++) {
 		for (int i = 0; i < r; ++i) {
 			matrix[r][i] = 0;
+		}
+	}
+
+	#pragma omp parallel for
+	for (int r = 0; r < matrix.getSize(); r++) {
+		out[r][r] = 1;
+		for (int i = r + 1; i < matrix.getSize(); ++i) {
+			out[r][i] = 0;
 		}
 	}
 }
@@ -150,6 +159,7 @@ void image(const char *file, Matrix<T> &a) {
 }
 
 int main(int argc, char**argv) {
+	int returnCode = 0;
 	if(argc < 2) {
 		std::cerr << argv[0] << " bin|txt [input]\n";
 		return 1;
@@ -179,7 +189,7 @@ int main(int argc, char**argv) {
 
 	std::unordered_map<std::string, void (*)(Matrix<CellType> &, Matrix<CellType> &, Matrix<CellType> &)> tests = {
 			{"decomposeOpenMP", decomposeOpenMP},
-			{"decomposeC11Threads", decomposeC11Threads},
+			//{"decomposeC11Threads", decomposeC11Threads},
 	};
 
 	for(auto fn: tests) {
@@ -198,18 +208,21 @@ int main(int argc, char**argv) {
 			Matrix<CellType> check;
 			{
 				PROFILE_BLOCK("\tMULT");
-				auto res = mult(l, matrix);
-				check = mult(P, res);
+				// P * L * U
+				auto a = mult(P, l);
+				check = mult(a, matrix);
 			}
 
 			if (orig != check) {
 				std::cout << "===ERROR===\n";
+				returnCode = 1;
 			}
 
 			print("A=", orig);
 			print("L=", l);
 			print("U=", matrix);
-			print("A=P*L*U=", check);
+			print("P=", P);
+			print("A=L*U=", check);
 
 			image("orig.ppm", orig);
 			image("l.ppm", l);
@@ -217,4 +230,6 @@ int main(int argc, char**argv) {
 			image("check.ppm", check);
 		}
 	}
+
+	return returnCode;
 }

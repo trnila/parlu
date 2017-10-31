@@ -69,7 +69,7 @@ public:
 		for(int i = 0; i < len; i++) {
 			if(fabs(data[i] - m.data[i]) > 0.001) {
 				equals = false;
-				printf("%f %f\n", data[i], m.data[i]);
+				//printf("%f %f\n", data[i], m.data[i]);
 			}
 		}
 
