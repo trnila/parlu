@@ -16,9 +16,10 @@
 #include "image.h"
 
 typedef double CellType;
+const int MAX_PRINTABLE_MATRIX_SIZE = 20;
 
 void print(const char* name, Matrix<CellType> &m) {
-	if(m.getSize() <= 20) {
+	if(m.getSize() <= MAX_PRINTABLE_MATRIX_SIZE) {
 		std::cout << name << "\n" << m;
 	}
 }
@@ -140,7 +141,7 @@ void decomposeC11Threads(Matrix<T> &matrix, Matrix<T> &out, std::vector<int> &P)
 
 // a == P * b ?
 template<typename T>
-bool equals(const Matrix<T> &a, const Matrix<T> &b, std::vector<int> &P) {
+bool equals(const Matrix<T> &a, const Matrix<T> &b, const std::vector<int> &P) {
 	for(int i = 0; i < P.size(); i++) {
 		for(int j = 0; j < P.size(); j++) {
 			if(fabs(a[P[i]][j] - b[i][j]) > CMP_PRECISION) {

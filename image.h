@@ -1,11 +1,11 @@
 #pragma once
 
-int mapTo(double x, double fromMin, double fromMax, int toMin, int toMax) {
+int mapTo(const double x, const double fromMin, const double fromMax, const int toMin, const int toMax) {
 	return (x - fromMin) * (toMax - toMin) / ((double) fromMax - fromMin) + toMin;
 }
 
 template<typename T>
-std::pair<T, T> findBounds(Matrix<T> a) {
+std::pair<T, T> findBounds(const Matrix<T> a) {
 	int size = a.getSize() * a.getSize();
 	T max = a[0][0];
 	T min = a[0][0];
@@ -24,7 +24,7 @@ std::pair<T, T> findBounds(Matrix<T> a) {
 }
 
 template<typename T>
-void saveImage(const char *file, Matrix<T> &a) {
+void saveImage(const char *file, const Matrix<T> &a) {
 	std::ofstream out(file);
 	out << "P3\n"
 	    << a.getSize() << " " << a.getSize() << "\n"
