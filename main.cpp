@@ -142,12 +142,7 @@ int mapTo(double x, double fromMin, double fromMax, int toMin, int toMax) {
 }
 
 template<typename T>
-void saveImage(const char *file, Matrix<T> &a) {
-	std::ofstream out(file);
-	out << "P3\n"
-	    << a.getSize() << " " << a.getSize() << "\n"
-		<< "255\n";
-
+std::pair<T, T> findBounds(Matrix<T> a) {
 	int size = a.getSize() * a.getSize();
 	T max = a[0][0];
 	T min = a[0][0];
@@ -160,6 +155,19 @@ void saveImage(const char *file, Matrix<T> &a) {
 			max = val;
 		}
 	}
+
+	return std::make_pair(min, max);
+}
+
+template<typename T>
+void saveImage(const char *file, Matrix<T> &a) {
+	std::ofstream out(file);
+	out << "P3\n"
+	    << a.getSize() << " " << a.getSize() << "\n"
+		<< "255\n";
+
+	T min, max;
+	std::tie(min, max) = findBounds(a);
 
 	std::string store;
 	store.reserve(2 * a.getSize() * a.getSize() * 3 * 4);
